@@ -9,8 +9,8 @@
 
 import time, _thread
 from sensor import Sensor
-from ina219 import INA219
-from ina219 import DeviceRangeError
+from lib.ina219 import INA219
+from lib.ina219 import DeviceRangeError
 from ucollections import deque
 from machine import I2C, Pin
 from lib import stats

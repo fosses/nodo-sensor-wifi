@@ -1,5 +1,6 @@
 #from umqtt.simple import MQTTClient
-import ujson, requests
+import ujson
+import  lib.requests as requests
 
 class Publisher():
 	ATTRIBUTE_URL = "v1/devices/me/attributes"
@@ -22,7 +23,7 @@ class Publisher():
 			print("P.Telemetry: %i" %response.status_code)
 			print(telemetry)
 			if (response.status_code is not 200):
-				raise Exception("Error %d en publicacion" %(response.status_code))
+				raise Exception("Error %d en publicacion" %(response.status_code))	
 			self.wdt.feed()
 			return True	
 #			self.mqtt.connect()

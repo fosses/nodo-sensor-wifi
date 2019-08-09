@@ -1,8 +1,9 @@
 import utime,dht, sys
 from machine import Pin
-import hpma2, sps30
-from am2315 import *
-from pms7003 import PMS7003
+import lib.hpma2 as hpma2
+import lib.sps30 as sps30
+from lib.am2315 import *
+from lib.pms7003 import PMS7003
 from ina219_ import INA219_
 import _thread
 
@@ -102,7 +103,7 @@ def startSensors(uart = None, i2c = None, spi = None, logger = None, hpma_pin=No
 	if not spi is None:
 		pass
 
-	if not "pms7003" in sensors:
+	if not "pms7003" in sensors and not "am2315" in sensors:
 		print("iniciando AM2302")
 		tmout = utime.time() + 5   # 5 segundos
 		test = 0

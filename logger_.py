@@ -1,4 +1,6 @@
-import sdcard, os, utime, sys, requests
+import os, utime, sys
+import lib.sdcard as sdcard
+import lib.requests as requests
 import _time
 from ucollections import deque
 class Logger:
@@ -76,7 +78,7 @@ class Logger:
 				with open(fn,'r') as f:
 					for line in f:
 						print("\nPublica diferido: %s" %line.strip('\r\n'))
-						if (not cbk(line)):
+						if (not cbk(line[line.index("{"):].strip('\r\n'))):
 							return True
 						# publisher.publish(line.strip('\r\n'), attr)
 				# c.disconnect()

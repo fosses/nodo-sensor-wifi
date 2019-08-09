@@ -1,11 +1,17 @@
+import utime, ujson, os, sys
 from machine import UART,I2C ,Pin, deepsleep, wake_reason, SPI, WDT, freq
+dir=os.getcwd()
+print(dir)
 #import ssd1306
 from publisher_ import Publisher
 #from pms7003 import PMS7003
 from esp32 import raw_temperature
 #from am2315 import *
 from logger_ import Logger
-import utime, ujson, os, sys, config, _time, sensorpool
+import config #as config
+import _time #as _time
+import sensorpool #as sensorpool
+
 
 versionsw 	= "2.1.0"
 tairf 		= 12
@@ -15,7 +21,7 @@ amok 		= 0
 hmok 		= 0
 pmok 		= 0
 
-if __name__ == '__main__':
+def start():
 	freq(80000000)
 	print("iniciando...")
 	print(wake_reason())
@@ -253,3 +259,6 @@ if __name__ == '__main__':
 		twking=utime.ticks_ms()
 		deepsleep(600000-twking)#10 minutos
 	#	deepsleep(20000) #20 segundos
+
+if __name__ == '__main__':
+	start()
