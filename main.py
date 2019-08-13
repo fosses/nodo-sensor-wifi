@@ -254,11 +254,16 @@ def start():
 				logger.debug(sys.print_exception(e))
 		logger.data(logdat, ujson.dumps(simple_tel))
 		logger.close()
-		print('Sensor y ESP32 en modo sleep')
+		return
+#		print('Sensor y ESP32 en modo sleep')
 #		break
-		twking=utime.ticks_ms()
-		deepsleep(600000-twking)#10 minutos
+#		twking=utime.ticks_ms()
+#		deepsleep(600000-twking)#10 minutos
 	#	deepsleep(20000) #20 segundos
 
 if __name__ == '__main__':
 	start()
+	print('Sensor y ESP32 en modo sleep')
+#		break
+	twking=utime.ticks_ms()
+	deepsleep(600000-twking)#10 minutos
