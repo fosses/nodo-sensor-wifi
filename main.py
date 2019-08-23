@@ -21,11 +21,12 @@ amok 		= 0
 hmok 		= 0
 pmok 		= 0
 
-def start():
+def start(wdt=None):
 	freq(80000000)
 	print("iniciando...")
 	print(wake_reason())
-	wdt = WDT(timeout=130000)
+	if wdt is None:
+		wdt = WDT(timeout=130000)
 	# Inicializa habilitación de los sensores de material particulado.
 	hpma_pin 	= Pin(16, Pin.OUT) #Se?al de activaci?n de transistor
 	pms_pin 	= Pin(4, Pin.OUT) #Se?al de activaci?n de transistor
