@@ -28,8 +28,37 @@ def startSPS30(num, sensors, uart,pin):
 		print("No se pudo iniciar SPS30")
 		pin.value(0)
 		print(repr(e))
-		utime.sleep(0.2)
+		utime.sleep(0.5)
 		return sensors
+		
+def startHPMA115S0(num, sensors, uart, pin):
+	print("Iniciando sensor HPMA115S0")
+	tmout = utime.time() + 15   # 15 segundos
+	test = 0
+	hmok = 0
+	while hmok == 0:
+		pin.value(1)
+		try:
+			hpma = hpma2.HPMA115S0(uart)
+			hpma.init()
+			hpma.startParticleMeasurement()
+			if (hpma.readParticleMeasurement()):
+				# hmok = 1
+				print("HPMA115S0-%d inicializado" %num)
+				if not "hpma115s0" in sensors:
+					sensors["hpma115s0"] = hpma
+				else:
+					sensors["hpma115s0-2"] = hpma
+				break
+		except Exception as e:
+			print(repr(e))
+		if (test > 15 or utime.time() > tmout):
+			print("No se pudo iniciar HPMA115S0")
+			pin.value(0)
+			utime.sleep(0.5)
+			break
+		test += 1
+	return sensors
 
 def startSensors(uart = None, i2c = None, spi = None, logger = None, hpma_pin=None, pms_pin=None, **kwargs):
 
@@ -54,32 +83,10 @@ def startSensors(uart = None, i2c = None, spi = None, logger = None, hpma_pin=No
 		sensors=startSPS30(1,sensors,uart,hpma_pin)
 
 	if not "sps30" in sensors:
-		# Inicia HPMA115S0
-		print("Iniciando sensor HPMA115S0")
+		
 		uart.deinit()
 		uart 	= UART(2, baudrate=9600, rx=32, tx=17, timeout=1000)
-		tmout = utime.time() + 15   # 15 segundos
-		test = 0
-		hmok = 0
-		while hmok == 0:
-			hpma_pin.value(1)
-			try:
-				hpma = hpma2.HPMA115S0(uart)
-				hpma.init()
-				hpma.startParticleMeasurement()
-				if (hpma.readParticleMeasurement()):
-					# hmok = 1
-					print("HPMA115S0 inicializado")
-					sensors["hpma115s0"] = hpma
-					break
-			except Exception as e:
-				print(repr(e))
-			if (test > 15 or utime.time() > tmout):
-				print("No se pudo iniciar HPMA115S0")
-				hpma_pin.value(0)
-				utime.sleep(0.5)
-				break
-			test += 1
+		sensors	=startHPMA115S0(1, sensors,uart, hpma_pin)
 
 	if not i2c is None:
 		# Inicia sensor AM2315
@@ -118,9 +125,22 @@ def startSensors(uart = None, i2c = None, spi = None, logger = None, hpma_pin=No
 	if not spi is None:
 		pass
 
+
+
+	if not "am2302" in sensors:
+		uart2 	= UART(1, baudrate=115200, rx=33, tx=2, timeout=1000)
+		sensors=startSPS30(2,sensors,uart2,pms_pin)
+	if not "am2302" in sensors and not "sps30-2" in sensors:
+		try:
+			uart2.deinit()
+		except Exception as e:
+			pass
+		uart2 	= UART(1, baudrate=9600, rx=33, tx=2, timeout=1000)
+		sensors=startHPMA115S0(2, sensors,uart2, pms_pin)
+		
 	if not "pms7003" in sensors and not "am2315" in sensors:
 		print("iniciando AM2302")
-		tmout = utime.time() + 5   # 5 segundos
+		tmout = utime.time() + 2   # 2 segundos
 		test = 0
 		while True:
 			try:
@@ -137,18 +157,14 @@ def startSensors(uart = None, i2c = None, spi = None, logger = None, hpma_pin=No
 			except Exception as e:
 				sys.print_exception(e)	
 				print(repr(e))
-			if (test == 5 or utime.time() > tmout):
+			if (test == 3 or utime.time() > tmout):
 				print("No se pudo iniciar AM2302")
+				del am2302
 				pms_pin.value(0)
 #				utime.sleep(0.5)
 				break
 			test = test + 1
 #			pms_pin.value(0)
 			utime.sleep(0.5)
-
-	if not "am2302" in sensors:
-		uart2 	= UART(1, baudrate=115200, rx=33, tx=2, timeout=1000)
-		sensors=startSPS30(2,sensors,uart2,pms_pin)
-	
 	
 	return sensors

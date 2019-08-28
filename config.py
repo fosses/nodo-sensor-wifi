@@ -9,9 +9,9 @@ def readCfg():
 		else:
 			file_name= "cfge.json"
 	except Exception as e:
-		print("Nose encontro el archivo de config debido a: %s. se importara el archivo por defecto" %(repr(e)))
+		print("No se encontro el archivo de config debido a: %s. Se importara la configuracion por defecto" %(repr(e)))
 		file_name= "cfge.json"
-	print("Importando archivo de configuracion %s" %file_name)
+	print("Importando archivo de configuracion %s..." %file_name)
 	with open(file_name) as json_data_file:
 		data = ujson.load(json_data_file)
 	return data
@@ -41,4 +41,8 @@ def readwificfg():
 	return data
 def readbuses():
 	conf = readCfg()
-	return conf["buses"]	
+	return conf["buses"]
+	
+def msgconf()	
+	conf = readCfg()
+	return conf["msgconf"]

@@ -32,7 +32,7 @@ class Publisher():
 #			self.mqtt.disconnect()
 		except Exception as e:
 			print("No fue posible publicar datos de %s en %s debido a: %s" %(self.token, self.host,repr(e)))
-			self.logger.debug("No fue posible publicar datos de %s en %s debido a: %s" %(self.token, self.host,repr(e)))
+			self.logger.error("No fue posible publicar datos de %s en %s debido a: %s" %(self.token, self.host,repr(e)))
 #			self.logger.debug(repr(e))
 #			print(repr(e))
 			if (not fromDB):
