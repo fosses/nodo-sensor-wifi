@@ -43,6 +43,6 @@ def readbuses():
 	conf = readCfg()
 	return conf["buses"]
 	
-def msgconf()	
+def msgconf():	
 	conf = readCfg()
 	return conf["msgconf"]
