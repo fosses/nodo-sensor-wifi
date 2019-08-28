@@ -61,6 +61,7 @@ class Logger:
 			return r.status_code == 200
 		except Exception as e:
 			print("No se pudo enviar mensaje de reporte de error al servidor")
+			sys.print_exception(e)
 	def data(self, file_name, data):
 		self._log(file_name, data, put_timestamp = False)
 	def isInitialized(self):
