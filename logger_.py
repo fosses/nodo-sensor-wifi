@@ -1,35 +1,47 @@
-import os, utime, sys
+import os, utime, sys, ujson
 import lib.sdcard as sdcard
 import lib.requests as requests
 import _time
 from ucollections import deque
 class Logger:
-	PARTITION = '/fc'
-	DEBUG_FILE = 'debug.txt'
-	INFO_FILE = 'info.txt'
-	WARNING_FILE = 'warning.txt'
-	ERROR_FILE = 'error.txt'
-	WIFI_FILE = 'wifi.json'
+	PARTITION 	= '/fc'
+	DEBUG_FILE	= 'debug.txt'
+	INFO_FILE 	= 'info.txt'
+	WARNING_FILE= 'warning.txt'
+	ERROR_FILE	= 'error.txt'
+	WIFI_FILE	= 'wifi.json'
 	
 	def __init__(self, spi = None, cs = None, telegramToken = None, chatId = None, name = "unnamed"):
-		self.spi	= spi
-		self.cs	 = cs
+		self.spi			= spi
+		self.cs				= cs
 		self.telegramToken 	= telegramToken
 		self.chatId			= chatId
 		self.name			= name
+		self.msg_active		= False
 
 		try:
-			self.sd			 = sdcard.SDCard(spi, cs) # Compatible with PCB 
+			self.sd				= sdcard.SDCard(spi, cs) # Compatible with PCB 
 			self.vfs			= os.VfsFat(self.sd)
 			os.mount(self.vfs, Logger.PARTITION)			
 			self.initialized	= True
 			print("SD inicializada")
+			
 		except Exception as e:
 			print("No se pudo montar micro SD")
-			self.vfs = None
-			self.initialized = False
+			self.vfs			= None
+			self.initialized	= False
 			sys.print_exception(e)
 			print(repr(e))
+		try:
+			if self.name is "unnamed":
+				val_cfg				=self.readCfg("cfg.json")
+				self.telegramToken 	= val_cfg["msgconf"]["token"]
+				self.chatId			= val_cfg["msgconf"]["chat_id"]
+				self.name			= val_cfg["attributes"]["nombre"]
+				self.msg_active		= True
+				print("Cliente de mensajeria configurado correctamente")
+		except Exception as e:
+			print("No se pudo configurar el cliente de mensajeria debido a: %s" %repr(e))
 	def _log(self, file_path, data_str, put_timestamp = True, prefix = None):
 		if self.isInitialized():
 			try:
@@ -52,16 +64,17 @@ class Logger:
 		self._log(Logger.WARNING_FILE, data_str, put_timestamp = True, prefix = "WARNING")			
 	def error(self, data_str):
 		self._log(Logger.ERROR_FILE, data_str, put_timestamp = True, prefix = "ERROR")
-		
-		headers = {'Content-Type': 'application/json','Accept': 'application/json'}
-		data 	= {"chat_id": self.chatId, "text": data_str}
-		url 	= 'https://api.telegram.org/bot%s/sendMessage'%(self.telegramToken)
-		try:
-			r = requests.post(url = url, data = json.dumps(data), headers = headers)
-			return r.status_code == 200
-		except Exception as e:
-			print("No se pudo enviar mensaje de reporte de error al servidor")
-			sys.print_exception(e)
+		if self.msg_active:
+			data_str= "%s: %s" %(self.name, data_str)
+			headers = {'Content-Type': 'application/json','Accept': 'application/json'}
+			data 	= {"chat_id": self.chatId, "text": data_str}
+			url 	= 'https://api.telegram.org/bot%s/sendMessage'%(self.telegramToken)
+			try:
+				r = requests.post(url = url, data = ujson.dumps(data), headers = headers)
+				return r.status_code == 200
+			except Exception as e:
+				print("No se pudo enviar mensaje de reporte de error por mensajeria")
+				sys.print_exception(e)
 	def data(self, file_name, data):
 		self._log(file_name, data, put_timestamp = False)
 	def isInitialized(self):
