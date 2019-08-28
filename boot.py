@@ -29,10 +29,7 @@ def do_connect():
 	wlan.config(dhcp_hostname="ESP32_NODO_" + get_id())
 	if not wlan.isconnected():	  # check if the station is connected to an AP
 		wlan.connect(wficfg["ssid"], wficfg["pssw"]) # connect to the AP (Router)
-#		wlan.connect("WSLAB", "wslabufro") # connect to the AP (Router)
-		#wlan.connect("BlackBOX", "familia@323435")
-		#wlan.connect("HUAWEI", "manzanas")
-		for _ in range(12):
+		for _ in range(30):
 			if wlan.isconnected():	  # check if the station is connected to an AP
 				print('network config:', wlan.ifconfig())
 				webrepl.start()
@@ -41,7 +38,7 @@ def do_connect():
 			print('.', end='')
 			time.sleep(1)
 		else:
-			print("Connect attempt timed out\n")
+			print("\nConnect attempt timed out\n")
 			return
 	print('\nnetwork config:', wlan.ifconfig())
 	
