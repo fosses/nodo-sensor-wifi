@@ -2,6 +2,7 @@ import os, utime, sys, ujson
 import lib.sdcard as sdcard
 import lib.requests as requests
 import _time
+from gc import collect
 from ucollections import deque
 class Logger:
 	PARTITION 	= '/fc'
@@ -70,6 +71,7 @@ class Logger:
 			data 	= {"chat_id": self.chatId, "text": data_str}
 			url 	= 'https://api.telegram.org/bot%s/sendMessage'%(self.telegramToken)
 			try:
+				collect()
 				r = requests.post(url = url, data = ujson.dumps(data), headers = headers)
 				return r.status_code == 200
 			except Exception as e:
