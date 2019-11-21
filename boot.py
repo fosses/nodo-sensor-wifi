@@ -1,20 +1,32 @@
 # This file is executed on every boot (including wake-boot from deepsleep)
-#import esp
-#esp.osdebug(None)
-import gc, webrepl, esp, time
-from logger_ import Logger
-from machine import SPI, Pin, unique_id
+from gc import collect
+from esp import osdebug
+from time import sleep
+from ujson import load
+import webrepl
+from uos import mount, umount
+from machine import unique_id, SDCard
 
-esp.osdebug(None)
-gc.collect()
+osdebug(None)
+collect()
 
-spi 	= SPI(sck = Pin(14), mosi = Pin(13), miso = Pin(15))
-cs 		= Pin(5, Pin.OUT)
-time.sleep(0.2)
-cfg = Logger(spi = spi, cs = cs)
-time.sleep(0.2)
-wficfg=cfg.readCfg('wifi.json')
-
+try:
+	mount(SDCard(slot=2, width=1, sck=14, miso=15, mosi=13, cs=5), "/fc")
+	SD=True
+	print("SD mounted")
+except Exception as e:
+	SD=False
+	print("SD not mounted")
+	
+def readwificfg(): 
+	try:
+		file_name = "/fc/wifi.json"
+		with open(file_name) as json_data_file:
+			data = load(json_data_file)
+		return data
+	except Exception as e:
+		print(repr(e))
+		return None
 def get_id():
 	x = [hex(int(c)).replace("0x","") for c in unique_id()]
 	for i in range(len(x)):                                                                                                                           
@@ -31,21 +43,34 @@ def do_connect():
 		wlan.connect(wficfg["ssid"], wficfg["pssw"]) # connect to the AP (Router)
 		for _ in range(30):
 			if wlan.isconnected():	  # check if the station is connected to an AP
-				print('network config:', wlan.ifconfig())
+				print('\nNetwork config:', wlan.ifconfig())
 				webrepl.start()
-				import uftpd
+#				import uftpd
 				break
 			print('.', end='')
-			time.sleep(1)
+			sleep(1)
 		else:
 			print("\nConnect attempt timed out\n")
 			return
-	print('\nnetwork config:', wlan.ifconfig())
+	else:
+		print("Already connected")
+		print('\nNetwork config:', wlan.ifconfig())
 	
-
-
+wficfg=None
+if SD:
+	print("Reading Wi-Fi data from SD")
+	wficfg=readwificfg()
+if not SD or wficfg is None:
+	print("Reading default Wi-Fi data")
+	wficfg = {}
+	wficfg["ssid"]="WSLAB"
+	wficfg["pssw"]="wslabufro"
+	
 do_connect()
-cfg.close()
-spi.deinit()
+if SD:
+	umount('/fc')
+	print("SD unmounted")
+collect()
+
 # print('Booted!')
 

@@ -6,15 +6,15 @@
 # @see https://github.com/chrisb2/pi_ina219/
 # @see config/config.py
 # @see services/sensor.py
-
-import time, _thread
-from sensor import Sensor
 from lib.ina219 import INA219
 from lib.ina219 import DeviceRangeError
+from sensor import Sensor
+import _time
+import time, _thread
 from ucollections import deque
 from machine import I2C, Pin
 from lib import stats
-import _time
+
 
 ## @class INA219_
 # @code{.py}

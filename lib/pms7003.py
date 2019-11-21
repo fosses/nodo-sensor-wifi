@@ -21,6 +21,9 @@ class PMS7003:
 	PMS_ERROR = 14
 	PMS_CHECKSUM = 15
 
+	def __init__(self, uart):
+		self._serial = uart
+		
 	def get_uart(self):
 		uart = UART(1, baudrate=9600, rx=33, tx=2, timeout=1000)
 		return uart
@@ -31,10 +34,10 @@ class PMS7003:
 		return True
 		
 	def init(self):
-		uart = self.get_uart()
+#		uart = self.get_uart()
 		tout = utime.time() + 10
 		while True:
-			if self._assert_byte(uart.read(1), 0x42):
+			if self._assert_byte(self._serial.read(1), 0x42):
 				print('Plantower inicializado')
 				return True
 			if (utime.time() > tout):
@@ -43,16 +46,16 @@ class PMS7003:
 					#break
 
 	def read(self):
-		uart = self.get_uart()
+#		uart = self.get_uart()
 		while True:
-			if not self._assert_byte(uart.read(1), 0x42):
+			if not self._assert_byte(self._serial.read(1), 0x42):
 				print('bad first')
 				continue
-			if not self._assert_byte(uart.read(1), 0x4D):
+			if not self._assert_byte(self._serial.read(1), 0x4D):
 				print('bad second')
 				continue
 
-			read_buffer = uart.read(30)
+			read_buffer = self._serial.read(30)
 			if len(read_buffer) < 30:
 				continue
 

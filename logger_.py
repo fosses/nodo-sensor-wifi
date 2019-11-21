@@ -43,11 +43,11 @@ class Logger:
 				print("Cliente de mensajeria configurado correctamente")
 		except Exception as e:
 			print("No se pudo configurar el cliente de mensajeria debido a: %s" %repr(e))
-	def _log(self, file_path, data_str, put_timestamp = True, prefix = None):
+	def _log(self, file_path, data_str, put_timestamp = True, prefix = None, mode ='a'):
 		if self.isInitialized():
 			try:
 				fn = Logger.PARTITION +"/"+ file_path # 'logdev.txt'
-				with open(fn,'a') as f:
+				with open(fn,mode) as f:
 					if not prefix is None:
 						f.write("%s: "%prefix)
 					if put_timestamp:
@@ -77,25 +77,47 @@ class Logger:
 			except Exception as e:
 				print("No se pudo enviar mensaje de reporte de error por mensajeria")
 				sys.print_exception(e)
-	def data(self, file_name, data):
+	def data(self, file_name, data, header =None):
+		if header is not None and not file_name in os.listdir(Logger.PARTITION):
+				self._log(file_name, header, put_timestamp = False)
 		self._log(file_name, data, put_timestamp = False)
 	def isInitialized(self):
 		return self.initialized
-	def readLinesCbk(self, file_name, cbk):
+	def readLinesCbk(self, file_name, cbk,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers, atrpub):
+		tstart=utime.time()-(utime.ticks_ms()/1000)
 		print("Intentando publicar datos pendientes de %s..." %file_name)
 		if self.vfs is not None:
-
 			#os.mount(vfs, '/fc')
 			if (file_name in os.listdir('/fc')):
 				fn = '/fc/' + file_name
 				print("Publicando datos de: " + file_name)
-
-				# c.connect()
+				print("Buscando indice de Pub.Dif. anterior...")
+				if file_name+'_idx' in os.listdir('/fc'):
+					with open(Logger.PARTITION + "/" + file_name+'_idx','r') as file_idx:
+						index_pub = int(file_idx.readline())
+						print("indice encontrado: %d" %index_pub)
+				else:
+					print("indice no encontrado. Valor por defecto: 0")
+					index_pub=0
+				counter=0
 				with open(fn,'r') as f:
 					for line in f:
-						print("\nPublica diferido: %s" %line.strip('\r\n'))
-						if (not cbk(line[line.index("{"):].strip('\r\n'))):
-							return True
+						if counter >= index_pub:
+							print("Prox ciclo: %i seg" %((tstart + 590)-utime.time()))
+							if (utime.time() >= (tstart + 590)):
+								from main import readandpublish
+								readandpublish(None, uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers, atrpub)
+								tstart=utime.time()
+							print("\nPublica diferido: %s" %line.strip('\r\n'))
+							if (not cbk(line[line.index("{"):].strip('\r\n'))):
+								print("No se pudo seguir publicando dados de %s Indice guardado para proximo ciclo: %d" %(file_name,counter))
+								self._log(file_name+"_idx", str(counter), put_timestamp = False, mode ='w')
+								return True
+							if counter%31 >=30:
+								self._log(file_name+"_idx", str(counter), put_timestamp = False, mode ='w')
+							counter +=1
+						else:
+							counter +=1
 						# publisher.publish(line.strip('\r\n'), attr)
 				# c.disconnect()
 				print("Datos de %s publicados correctamente" %file_name)

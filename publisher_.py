@@ -1,5 +1,5 @@
 #from umqtt.simple import MQTTClient
-import ujson
+from ujson import dumps, loads
 import  lib.requests as requests
 
 class Publisher():
@@ -17,9 +17,9 @@ class Publisher():
 	def publish(self, telemetry, attributes, fromDB =False):
 		try:
 			print("Publicando en %s en %s" %(self.token, self.host,))
-			response = requests.post("http://"+self.host+":"+self.port+"/api/v1/"+self.token+"/attributes", data = attributes, headers={"Content-Type": "application/json"})
-			print("P.Atributes:  %i" %response.status_code)
-			response = requests.post("http://"+self.host+":"+self.port+"/api/v1/"+self.token+"/telemetry", data = telemetry, headers={"Content-Type": "application/json"})
+			response = requests.post("http://%s:%s/api/v1/%s/attributes" %(self.host,self.port,self.token), data = attributes, headers={"Content-Type": "application/json"})
+			print("P.Atributes: %i" %response.status_code)
+			response = requests.post("http://%s:%s/api/v1/%s/telemetry" %(self.host,self.port,self.token), data = telemetry, headers={"Content-Type": "application/json"})
 			print("P.Telemetry: %i" %response.status_code)
 			print(telemetry)
 			if (response.status_code is not 200):
@@ -33,6 +33,7 @@ class Publisher():
 		except Exception as e:
 			print("No fue posible publicar datos de %s en %s debido a: %s" %(self.token, self.host,repr(e)))
 			self.logger.error("No fue posible publicar datos de %s en %s debido a: %s" %(self.token, self.host,repr(e)))
+			self.wdt.feed()
 #			self.logger.debug(repr(e))
 #			print(repr(e))
 			if (not fromDB):
@@ -40,17 +41,21 @@ class Publisher():
 		return False
 
 	def saveData(self,data):
-		tel_offline=ujson.loads(data)
+		tel_offline=loads(data)
 		if self.format == "complete":
 			tel_offline["info-extra"] = "{'modo':'offline'}"
-		tel_offline=ujson.dumps(tel_offline)
+		tel_offline=dumps(tel_offline)
 		self.logger.data(self.getDatalogFilename(), tel_offline)
 		print("Datos %s guardados en archivo %s"%(self.format, self.getDatalogFilename()))
 		
 	def getDatalogFilename(self):
 		return "datalog_%s"%self.token
 		
-	def dbPublish(self, attributes):
-		if(not self.logger.readLinesCbk(self.getDatalogFilename(), lambda line: self.publish(line.strip('\r\n'), attributes, True))):
+	def dbPublish(self, attributes,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers):
+		if(not self.logger.readLinesCbk(self.getDatalogFilename(), lambda line: self.publish(line.strip('\r\n'), attributes, True),uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers, attributes)):
 			print("Eliminando archivo %s" %self.getDatalogFilename())
 			self.logger.removeFile(self.getDatalogFilename())
+			try:
+				self.logger.removeFile(self.getDatalogFilename()+"_idx")
+			except Exception as e:
+				pass

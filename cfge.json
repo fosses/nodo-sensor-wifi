@@ -121,27 +121,16 @@
 			"info-extra"				: "{}"
 		}
 	},
-	"publish":{
-		"oldf": "bH6pqMVTv7skNTncn3rq",
-		"newf": "M8gCl8kX7cWeDz6FLFuU",
-		"svtb": "smartemuco.ceisufro.cl",
-		"atbt": "v1/devices/me/attributes",
-		"tmty": "v1/devices/me/telemetry",
-		"port": "1883"
+	"msgconf":{
+			"token":"704173046:AAEKxbMXkV_gNWHI3qzg_sk-c49crYYT_ME",
+			"chat_id":"17735707"
 	},
 	"publishers":[
 		{
-			"name"		: "oldf",
-			"format"	: "simple",
-			"port"		: "80",
-			"host"		: "146.83.206.77",
-			"token"		: "nSXOa8fK7KuZwqwlTuSh"
-		},
-		{
 			"name"		: "newf",
-			"format"	: "complete",
+			"format"	: "simple",
 			"port"		: "8080",
-			"host"		: "remo.ceisufro.cl",
+			"host"		: "146.83.206.131",
 			"token"		: "0skM2LqlLktoEuQZWmQY"
 		}
 	]
