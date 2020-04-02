@@ -9,7 +9,7 @@ dir=os.getcwd()
 print(dir)
 from esp32 import raw_temperature
 
-versionsw 	= "2.4"
+versionsw 	= "2.4.1"
 tairf 		= 12
 tstamp 		= 946684800
 logdat 		= 'logdata.txt'

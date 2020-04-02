@@ -19,6 +19,7 @@ def startSPS30(num, sensors, uart,pin):
 		sps.start()
 		sleep(2)
 		if(sps.measure()):
+			sps.clean()
 			print("SPS30-"+str(num)+" inicializado")
 			if num is 2:
 				sensors["sps30-"+str(num)] = sps
