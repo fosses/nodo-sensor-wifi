@@ -3,27 +3,28 @@ from logger_ import Logger
 from publisher_ import Publisher
 import _time #as _time
 import config #as config
-import utime, ujson, os, sys
+from sys import print_exception
+from os import getcwd
+from ujson import dumps
+from utime import sleep, time, ticks_ms
 from machine import UART,I2C ,Pin, deepsleep, wake_reason, SPI, WDT, freq#, Timer, disable_irq, enable_irq
-dir=os.getcwd()
-print(dir)
 from esp32 import raw_temperature
 
-versionsw 	= "2.4.1"
-tairf 		= 12
-tstamp 		= 946684800
-logdat 		= 'logdata.txt'
+VERSIONSW 	= "2.4.2"
+TAIRF 		= 12
+TSTAMP 		= 946684800
+LOGDAT 		= 'logdata.txt'
 amok 		= 0
 hmok 		= 0
 pmok 		= 0
 
+print(getcwd())
+
 def readandpublish(timer,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers, atrpub):
-		# Inicia sensores
+	# Inicia sensores
 	sensors = sensorpool.startSensors(uart = uart, uart2 = uart2, i2c = i2c, spi = spi, logger = logger, hpma_pin=hpma_pin, pms_pin=pms_pin)
-	#Datasheet says to wait for at least 30 seconds...
-	print('Flujo de aire forzado por %d segundos...' %tairf)
-	utime.sleep(tairf)
-	#Returns NOK if no measurement found in reasonable time
+	print('Flujo de aire forzado por %d segundos...' %TAIRF)
+	sleep(TAIRF)
 	print('Realizando medicion...')
 	measures=sensorpool.readsensors(sensors, logger)
 	
@@ -32,12 +33,12 @@ def readandpublish(timer,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publi
 	pms_pin.value(0)
 	
 	## **************** PREPARACIÓN DE PAQUETES DE TELEMETRÍA **************** 
-	tstp	= (utime.time()+tstamp)*1000
+	tstp	= (time()+TSTAMP)*1000
 	fecha	= _time.now()
 	
 	print("PM2.5: %.2f %.2f %.2f ug/m3 [H-P-S]" % (measures["HPM2_5"], measures["PPM2_5"], measures["SPM2_5"]))
 	print("PM10:  %.2f %.2f %.2f ug/m3 [H-P-S]" % (measures["HPM10"], measures["PPM10"], measures["SPM10"]))
-	print("Temperatura: %.2f ºC" % (measures["Temp"]))
+	print("Temperatura: %.2f ºC" %(measures["Temp"]))
 	print("Humedad Rel: %.2f %%" %(measures["HR"]))
 	
 	# Finaliza ina219
@@ -53,10 +54,8 @@ def readandpublish(timer,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publi
 	simple_tel["spok"]	= int("sps30" in sensors)
 
 	complete_tel 		= config.measurements()
-
-
 	complete_tel["tesp"]["medicion:otro:temperatura"]			= (raw_temperature()-32)*0.5555556
-#		complete_tel["tesp"]["tipo"]								= "meteorologia:temperatura:\xbaC"
+#	complete_tel["tesp"]["tipo"]								= "meteorologia:temperatura:\xbaC"
 	complete_tel["tesp"]["fecha:otro:temperatura"]				= tstp
 		
 	pub_tel = {}
@@ -89,7 +88,7 @@ def readandpublish(timer,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publi
 		simple_tel["HR"] 											= measures["HR"]
 		complete_tel["temp"]["medicion:meteorologia:temperatura"]	= measures["Temp"]
 		complete_tel["temp"]["fecha:meteorologia:temperatura"]		= tstp
-#			complete_tel["temp"]["tipo"]								= "meteorologia:temperatura:\xbaC"
+#		complete_tel["temp"]["tipo"]								= "meteorologia:temperatura:\xbaC"
 		complete_tel["hur"]["medicion:meteorologia:humedad"]		= measures["HR"]
 		complete_tel["hur"]["fecha:meteorologia:humedad"]			= tstp
 		
@@ -127,20 +126,20 @@ def readandpublish(timer,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publi
 	for pub in publishers:
 		try:
 			if pub.format == "simple":
-				print("\nPublica simple: %s"%ujson.dumps(simple_tel))
-				pub.publish(ujson.dumps(simple_tel), atrpub)
+				print("\nPublica simple: %s"%dumps(simple_tel))
+				pub.publish(dumps(simple_tel), atrpub)
 			elif pub.format == "complete":
 				for meas in pub_tel:
-					print("\nPublica completo: %s"%ujson.dumps(pub_tel[meas]))
-					pub.publish(ujson.dumps(pub_tel[meas]), atrpub)
+					print("\nPublica completo: %s"%dumps(pub_tel[meas]))
+					pub.publish(dumps(pub_tel[meas]), atrpub)
 			
 		except Exception as e:
-			sys.print_exception(e)	
+			print_exception(e)	
 			print(repr(e))
 			logger.debug("Error en la publicación")
-			logger.debug(sys.print_exception(e))
+			logger.debug(print_exception(e))
 
-	logger.data(logdat, ujson.dumps(simple_tel))
+	logger.data(LOGDAT, dumps(simple_tel))
 
 def start(wdt=None):
 	freq(80000000)
@@ -164,19 +163,19 @@ def start(wdt=None):
 
 	# Inicia logger. Interfaz para SD.
 	logger = Logger(spi = spi, cs = cs)
-
+	logger.success("Estacion inicializada")
 	# Sincroniza NTP
 	_time.setntp(logger = logger)
 
 	#Crea publicadores
 	publishers = []
-	for pub in config.publishers():
+	for pub in config.publishers(logger):
 		publishers.append(
 			Publisher(host = pub["host"], token = pub["token"], port = pub["port"], format_ = pub["format"], logger = logger, wdt=wdt)
 		)
 	attr 				= config.attributes()
-	attr["version"]		= versionsw
-	atrpub				= ujson.dumps(attr)
+	attr["version"]		= VERSIONSW
+	atrpub				= dumps(attr)
 #	print("iniciando timer")
 #	timer.init(period=540000, mode=Timer.PERIODIC, callback=lambda t:readandpublish(None,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers, atrpub))
 #	print("timer iniciado")
@@ -185,6 +184,7 @@ def start(wdt=None):
 	freq(240000000)
 	for pub in publishers:
 		pub.dbPublish(atrpub,uart, uart2, i2c, spi, logger, hpma_pin, pms_pin, publishers)
+	logger.success("Ciclo de funcionamiento exitoso")
 	logger.close()
 #	state = disable_irq()
 #	timer.deinit()
@@ -197,6 +197,6 @@ def start(wdt=None):
 
 if __name__ == '__main__':
 	start()
-	twking=utime.ticks_ms()
+	twking=ticks_ms()
 	print('ESP32 in deep sleep by %d msecs' %(600000-twking))
 	deepsleep(600000-twking)#10 minutos

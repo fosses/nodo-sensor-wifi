@@ -6,7 +6,7 @@ from sys import print_exception
 initialized	=	False
 data		=	""
 
-def readCfg():
+def readCfg(logger=None):
 	global initialized,data
 	data_sbx	=	{}
 	if not initialized:
@@ -33,9 +33,9 @@ def readCfg():
 				port	=	data["scinadmin"]["port"], 
 				email	=	data["scinadmin"]["email"], 
 				password=	data["scinadmin"]["password"])
-				
+######			if logger is not None:
+######				logger.enableRemoteStatus(device)	
 			print("Buscando actualizaciones de publicadores")
-			
 			data_sbx=device.find_data()
 			if device.login():
 				print("Logged in !")
@@ -47,13 +47,16 @@ def readCfg():
 					del data_sbx_new
 			else:
 				print("No se pudo autenticar en scinadmin :c")
-			if data_sbx["updatedAt"] is not None:
+			if data_sbx["updatedAt"] is not None and 'config' in data_sbx:
 				data["attributes"]=data_sbx['config']['attributes']
 				data["publishers"]=data_sbx['config']['publishers']
 				del data["attributes"]["_id"]
 #				print (data["attributes"])
 #				print (data["publishers"])
 				del data_sbx
+			else:
+				print("No hay publicadores ni atributos desde Scinadmin")
+		logger.startTelegram(data["attributes"]["nombre"])
 		initialized = True
 #	return data
 
@@ -63,9 +66,9 @@ def findPublisher(publisher_name):
 			return pub
 	return None
 
-def publishers():
+def publishers(logger):
 	print("importando publicadores")
-	readCfg()
+	readCfg(logger)
 	return data["publishers"]
 
 

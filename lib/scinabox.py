@@ -49,6 +49,7 @@ class ScinaboxAdmin:
 
 
 	def get_device(self, auth_key):
+		self.auth_key=auth_key
 		headers = {'content-type': 'application/json', "Authorization": self.user["token"]}
 		try:
 			r = requests.get(
@@ -100,4 +101,17 @@ class ScinaboxAdmin:
 			data_sbx = {}
 			data_sbx["updatedAt"]=None
 		return data_sbx
-								
+		
+	def set_device_state(self,state, state_message):
+		headers = {'content-type': 'application/json', "Authorization": self.user["token"]}
+		try:
+			r = requests.post(
+				url	 = "http://%s:%d/api/user/set-device-state"%(self.host, self.port),
+				data	= dumps({"auth_key": self.auth_key, "state":state , "state_message":state_message}),
+				headers = headers	
+			)
+			print(r.json()["message"])
+			return r.status_code == 200
+		except Exception as e:
+			print_exception(e)	
+			return False

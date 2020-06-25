@@ -9,7 +9,7 @@ from dht import DHT22
 from sys import print_exception
 from machine import Pin, UART
 
-def startSPS30(num, sensors, uart,pin):
+def startSPS30(num, sensors, uart,pin,logger=None):
 	try:
 		print("Inicializando SPS30-%d..."%num)
 		pin.value(1)
@@ -20,7 +20,8 @@ def startSPS30(num, sensors, uart,pin):
 		sleep(2)
 		if(sps.measure()):
 			sps.clean()
-			print("SPS30-"+str(num)+" inicializado")
+			print("SPS30-%d inicializado" %num)
+			logger.success("Sensor SPS30-%d inicializado" %num)
 			if num is 2:
 				sensors["sps30-"+str(num)] = sps
 			else:
@@ -34,7 +35,7 @@ def startSPS30(num, sensors, uart,pin):
 		sleep(0.5)
 		return sensors
 		
-def startHPMA115S0(num, sensors, uart, pin):
+def startHPMA115S0(num, sensors, uart, pin,logger=None):
 	print("Iniciando sensor HPMA115S0")
 	tmout = timee() + 15   # 15 segundos
 	test = 0
@@ -48,6 +49,7 @@ def startHPMA115S0(num, sensors, uart, pin):
 			if (hpma.readParticleMeasurement()):
 				# hmok = 1
 				print("HPMA115S0-%d inicializado" %num)
+				logger.success("HPMA115S0-%d inicializado" %num)
 				if not "hpma115s0" in sensors:
 					sensors["hpma115s0"] = hpma
 				else:
@@ -78,18 +80,19 @@ def startSensors(uart = None, uart2 = None, i2c = None, spi = None, logger = Non
 		if(pms.init()):
 			pmok=1
 			sensors["pms7003"] = pms
+			logger.success("Sensor PMS7003 inicializado")
 	except Exception as e:
 		print(repr(e))
 		pms_pin.value(0)
 
 	if not uart is None:
-		sensors=startSPS30(1,sensors,uart,hpma_pin)
+		sensors=startSPS30(1,sensors,uart,hpma_pin,logger)
 
 	if not "sps30" in sensors:
 		
 		uart.deinit()
 		uart 	= UART(2, baudrate=9600, rx=32, tx=17, timeout=1000)
-		sensors	=startHPMA115S0(1, sensors,uart, hpma_pin)
+		sensors	=startHPMA115S0(1, sensors,uart, hpma_pin,logger)
 
 	if not "pms7003" in sensors and not "am2315" in sensors:
 		print("iniciando AM2302")
@@ -106,6 +109,7 @@ def startSensors(uart = None, uart2 = None, i2c = None, spi = None, logger = Non
 #			print(sensors["am2302"].humidity())
 #			print(sensors["am2302"].temperature())
 				print("Sensor AM2302 inicializado")
+				logger.success("Sensor AM2302 inicializado")
 				break
 			except Exception as e:
 #					sys.print_exception(e)	
@@ -130,6 +134,7 @@ def startSensors(uart = None, uart2 = None, i2c = None, spi = None, logger = Non
 				print("Iniciando sensor AM2315...")
 				if(am2315.measure()):
 					print("AM2315 inicializado")
+					logger.success("Sensor AM2315 inicializado")
 					sensors["am2315"] = am2315	
 					break
 			except Exception as e:
@@ -181,8 +186,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.debug("Error en lectura de sensor honeywell")
-			logger.debug(print_exception(e))
+			logger.warning("Error en lectura de sensor honeywell",e)
 		try:
 			if "pms7003" in sensors:
 #						# Lee PMS7003
@@ -192,8 +196,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.debug("Error en lectura de sensor plantower")
-			logger.debug(print_exception(e))
+			logger.warning("Error en lectura de sensor plantower",e)
 		try:
 			# Lee AM2315
 			if "am2315" in sensors:
@@ -203,8 +206,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.debug("Error en lectura de sensor AM2315")
-			logger.debug(print_exception(e))
+			logger.warning("Error en lectura de sensor AM2315",e)
 		try:
 			if "am2302" in sensors:
 				sensors["am2302"].measure()
@@ -213,8 +215,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.debug("Error en lectura de sensor AM2302")
-			logger.debug(print_exception(e))
+			logger.warning("Error en lectura de sensor AM2302",e)
 		try:
 			if "sps30" in sensors:
 				sensors["sps30"].measure()
@@ -223,8 +224,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.debug("Error en lectura de sensor SPS30")
-			logger.debug(print_exception(e))
+			logger.warning("Error en lectura de sensor SPS30",e)
 		
 	HPM2_5	= list(sorted(HPM2_5))
 	HPM10	= list(sorted(HPM10))
@@ -251,5 +251,10 @@ def readsensors(sensors, logger):
 	measures["voltage"]	= sensors["ina219"].voltage
 	measures["current"]	= sensors["ina219"].current
 	measures["power"] 	= sensors["ina219"].power
+	if "sps30" in sensors and SPM2_5[2]==1000:
+		logger.warning("Sensor de material particulado saturado")
+	if "ina219" in sensors and sensors["ina219"].voltage <= 3.3:
+		logger.warning("Bateria baja")
+		print("Bateria baja")
 	return measures
 		
