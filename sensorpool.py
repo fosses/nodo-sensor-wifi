@@ -9,6 +9,10 @@ from dht import DHT22
 from sys import print_exception
 from machine import Pin, UART
 
+def median(arr):
+	arr	= list(sorted(arr))
+	return arr[int(len(arr)/2)]
+
 def startSPS30(num, sensors, uart,pin,logger=None):
 	try:
 		print("Inicializando SPS30-%d..."%num)
@@ -19,7 +23,7 @@ def startSPS30(num, sensors, uart,pin,logger=None):
 		sps.start()
 		sleep(2)
 		if(sps.measure()):
-#			sps.clean()
+			# sps.clean()
 			print("SPS30-%d inicializado" %num)
 			logger.success("Sensor SPS30-%d inicializado" %num)
 			if num is 2:
@@ -215,7 +219,7 @@ def readsensors(sensors, logger):
 		except Exception as e:
 			print_exception(e)	
 			print(repr(e))
-			logger.warning("Error en lectura de sensor AM2302",e)
+			#logger.warning("Error en lectura de sensor AM2302",e) #Siempre da error en lectura
 		try:
 			if "sps30" in sensors:
 				sensors["sps30"].measure()
@@ -226,27 +230,27 @@ def readsensors(sensors, logger):
 			print(repr(e))
 			logger.warning("Error en lectura de sensor SPS30",e)
 		
-	HPM2_5	= list(sorted(HPM2_5))
-	HPM10	= list(sorted(HPM10))
-	PPM10	= list(sorted(PPM10))
-	PPM2_5	= list(sorted(PPM2_5))
-	tem		= list(sorted(tem))
-	hr		= list(sorted(hr))
-	SPM2_5	= list(sorted(SPM2_5))
-	SPM10	= list(sorted(SPM10))
+	# HPM2_5	= list(sorted(HPM2_5))
+	# HPM10	= list(sorted(HPM10))
+	# PPM10	= list(sorted(PPM10))
+	# PPM2_5	= list(sorted(PPM2_5))
+	# tem		= list(sorted(tem))
+	# hr		= list(sorted(hr))
+	# SPM2_5	= list(sorted(SPM2_5))
+	# SPM10	= list(sorted(SPM10))
 	measures = {}
 #	if "hpma115s0" in sensors: 	
-	measures["HPM2_5"] 	= HPM2_5[2]
-	measures["HPM10"] 	= HPM10[2]
+	measures["HPM2_5"] 	= median(HPM2_5)#[2]
+	measures["HPM10"] 	= median(HPM10)#[2]
 #	if "pms7003" in sensors:
-	measures["PPM2_5"] 	= PPM2_5[2]
-	measures["PPM10"] 	= PPM10[2]			
+	measures["PPM2_5"] 	= median(PPM2_5)#[2]
+	measures["PPM10"] 	= median(PPM10)#[2]			
 #	if "am2315" in sensors or "am2302" in sensors:
-	measures["Temp"] 	= tem[2]
-	measures["HR"] 		= hr[2]			
+	measures["Temp"] 	= median(tem)#[2]
+	measures["HR"] 		= median(hr)#[2]			
 #	if "sps30" in sensors:
-	measures["SPM2_5"]	= SPM2_5[2]
-	measures["SPM10"]	= SPM10[2]
+	measures["SPM2_5"]	= median(SPM2_5)#[2]
+	measures["SPM10"]	= median(SPM10)#[2]
 #	if "ina219" in sensors and sensors["ina219"].voltage is not None:
 	measures["voltage"]	= sensors["ina219"].voltage
 	measures["current"]	= sensors["ina219"].current

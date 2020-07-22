@@ -15,6 +15,7 @@ def ntime(host):
 	msg = s.recv(48)
 	s.close()
 	val = unpack("!I", msg[40:44])[0]
+	del NTP_QUERY,addr,s,res,msg
 	return val - NTP_DELTA
 
 # There's currently no timezone support in MicroPython, so
@@ -22,6 +23,7 @@ def ntime(host):
 def settime(host = "ntp.shoa.cl"):
 	t = ntime(host)
 	tm = localtime(t)
+	del t
 	tm = tm[0:3] + (0,) + tm[3:6] + (0,)
 	if tm[0]> 2019:
 		RTC().datetime(tm)
@@ -45,12 +47,12 @@ def setntp(logger = None):
 			print("Intento %i para sincronizar reloj mediante NTP" %test)
 			if (test > 5 or time() > timeout or settime()):
 				break
+			test = test + 1
 		except Exception as e:
-			
 			print(repr(e))
 			if logger is not None:
 				logger.error("Error al sincronizar el reloj mediante NTP",e)
-		test =+ 1
+	del tact,timeout,test
 
 
 

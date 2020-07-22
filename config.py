@@ -40,18 +40,17 @@ def readCfg(logger=None):
 			if device.login():
 				print("Logged in !")
 				print("Token: %s"%device.user["token"])
-				try:
-					data_sbx_new=device.update(data["scinadmin"]["auth_key"],data_sbx["updatedAt"])
-				except Exception as e:
-					print("Fallo la consulta de datos a scinadmin debido a %s" %(repr(e)))
-					data_sbx_new = None
+				if "updatedAt" in data_sbx:
+					data_sbx["config"]["last_update_timestamp"]=data_sbx["updatedAt"]
+					del data_sbx["updatedAt"]
+				data_sbx_new=device.update(data["scinadmin"]["auth_key"],data_sbx["config"]["last_update_timestamp"])
 				if data_sbx_new is not None:	
 					del data_sbx
 					data_sbx=data_sbx_new
 					del data_sbx_new
 			else:
 				print("No se pudo autenticar en scinadmin :c")
-			if data_sbx["updatedAt"] is not None and 'config' in data_sbx:
+			if data_sbx["config"]["last_update_timestamp"] is not None and 'publishers' in data_sbx['config']:
 				data["attributes"]=data_sbx['config']['attributes']
 				data["publishers"]=data_sbx['config']['publishers']
 				del data["attributes"]["_id"]

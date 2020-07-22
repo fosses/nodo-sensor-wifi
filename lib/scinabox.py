@@ -53,7 +53,7 @@ class ScinaboxAdmin:
 		headers = {'content-type': 'application/json', "Authorization": self.user["token"]}
 		try:
 			r = requests.get(
-				url	 = "http://%s:%d/api/user/get-device?auth_key=%s"%(self.host, self.port,auth_key),
+				url	 = "http://%s:%d/api/user/get-device-config?auth_key=%s"%(self.host, self.port,auth_key),
 #				params  = device,
 				headers = headers	
 			)  
@@ -64,10 +64,10 @@ class ScinaboxAdmin:
 			print_exception(e)	
 			return None
 			
-	def update(self,auth_key,updatedAt=None):
+	def update(self,auth_key,last_update_timestamp=None):
 		device=self.get_device(auth_key)
-		print("Fecha Pub local: %s\nFecha Pub remoto: %s" %(updatedAt, device["updatedAt"]))
-		if updatedAt != device["updatedAt"]:
+		print("Fecha Pub local: %s\nFecha Pub remoto: %s" %(last_update_timestamp, device["config"]["last_update_timestamp"]))
+		if last_update_timestamp != device["config"]["last_update_timestamp"]:
 			print("Cambio en publicadores detectado. Actualizando desde servidor...")
 			from os import remove, listdir
 			if self.file_pub in listdir(self.file_partition):
@@ -75,14 +75,14 @@ class ScinaboxAdmin:
 				print("Archivo antiguo eliminado")
 			else:
 				print("No se enconto archivo %s" %self.file_pub_rute)
-				try:
-					with open(self.file_pub_rute,'w') as f:
-						f.write(dumps(device))
-					print("Configuración del dispositivo actualizada a %s"%device["updatedAt"])
-					return device
-				except Exception as e:
-					print("No se pudo actualizar la configuración del dispositivo debido a :%s"%repr(e))
-					return device
+			try:
+				with open(self.file_pub_rute,'w') as f:
+					f.write(dumps(device))
+				print("Configuración del dispositivo actualizada a %s"%device["config"]["last_update_timestamp"])
+				return device
+			except Exception as e:
+				print("No se pudo actualizar la configuración del dispositivo debido a :%s"%repr(e))
+				return device
 		else:
 			return None
 		
@@ -98,8 +98,7 @@ class ScinaboxAdmin:
 		except Exception as e:
 			print_exception(e)
 			print("No se encontraron datos previos de Scinadmin")
-			data_sbx = {}
-			data_sbx["updatedAt"]=None
+			data_sbx = {"config":{"last_update_timestamp":None}}
 		return data_sbx
 		
 	def set_device_state(self,state, state_message):
